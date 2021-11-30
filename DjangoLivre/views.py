@@ -18,7 +18,7 @@ class MainPage(APIView):
                 'All Transfers': 'all-transfers/',
                 'All User Transfers Received': 'transfers-received/<str:cpf>/',
                 'All User Transfers Performed': 'transfers-performed/<str:cpf>/',
-                'Bank Account': 'account/<str:id>/',
+                'Bank Account': 'account/<str:cpf>/',
                 'All Bank Accounts': 'all-accounts',
                 }
 
