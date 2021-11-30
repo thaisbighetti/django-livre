@@ -51,9 +51,19 @@ class UserView(generics.ListAPIView):
 
 
 class UserSearch(generics.ListAPIView):
+    serializer_class = ClientSerializer
+
     def list(self, request, cpf):
         user = Client.objects.get(cpf=cpf)
         serializer = ClientSerializer(user)
+        return Response(serializer.data, status=http.HTTPStatus.OK)
+
+    def put(self, request, cpf):
+        user = Client.objects.get(cpf=cpf)
+        serializer = ClientSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            with transaction.atomic():
+                serializer.save()
         return Response(serializer.data, status=http.HTTPStatus.OK)
 
 
@@ -67,7 +77,7 @@ class CreateTransfer(APIView):
             if request.data['source_cpf'] != ['target_cpf']:
                 source_user = Account.objects.get(account_user=request.data['source_cpf'])
                 target_user = Account.objects.get(account_user=request.data['target_cpf'])
-                if (int(request.data['value']) > source_user.balance) or (source_user == target_user):
+                if (float(request.data['value']) > source_user.balance) or (source_user == target_user):
                     return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     source_user.balance = source_user.balance - float(request.data['value'])

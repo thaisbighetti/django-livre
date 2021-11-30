@@ -29,11 +29,11 @@ class Account(models.Model):
 class Transfer(models.Model):
     source_cpf = BRCPFField('CPF do usuário de origem', blank=False, unique=False)
     target_cpf = BRCPFField('CPF do usuário de destino', blank=False, unique=False, )
-    value = models.FloatField(default=0, verbose_name='Valor')
+    value = models.FloatField(default=0, verbose_name='Valor',)
     date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        details = f'De: {self.source_name} | Para: {self.target_name} | Valor: {self.value} | Data: {self.date}'
+        details = f'De: {self.source_cpf} | Para: {self.target_cpf} | Valor: {self.value} | Data: {self.date}'
         return details
 
 
