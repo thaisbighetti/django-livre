@@ -1,10 +1,17 @@
 import http
 from django.db import transaction
+from django.http import HttpResponse
+from django.shortcuts import render
 from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Client, Transfer, Account
 from .serializers import TransferSerializer, AccountSerializer, ClientSerializer
+import os
+
+def index(request):
+    times = int(os.environ.get('TIMES', 3))
+    return HttpResponse('Hello! ' * times)
 
 
 class MainPage(APIView):

@@ -16,11 +16,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from DjangoLivre.views import CreateUser, UserView, CreateTransfer, TransfersView, UserSearch, TransfersPerformed,\
-     TransfersReceived,  AccountsView, MainPage, AccountView
+     TransfersReceived,  AccountsView, MainPage, AccountView, index
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', MainPage.as_view()),
+    path('', index),
+    path('n/', MainPage.as_view()),
     path('create-user/', CreateUser.as_view()),
     path('user/<str:cpf>/', UserSearch.as_view()),
     path('all-users/', UserView.as_view()),
