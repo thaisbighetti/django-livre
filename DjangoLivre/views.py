@@ -1,17 +1,10 @@
 import http
 from django.db import transaction
-from django.http import HttpResponse
-from django.shortcuts import render
 from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Client, Transfer, Account
 from .serializers import TransferSerializer, AccountSerializer, ClientSerializer
-import os
-
-def index(request):
-    times = int(os.environ.get('TIMES', 3))
-    return HttpResponse('Hello! ' * times)
 
 
 class MainPage(APIView):
@@ -39,11 +32,13 @@ class CreateUser(APIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            with transaction.atomic():
-                serializer.save()
-                account = Account.objects.create(account_user_id=request.data['cpf'], )
-                account.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            if request.data['cpf'].isalnum():
+                with transaction.atomic():
+                    serializer.save()
+                    account = Account.objects.create(account_user_id=request.data['cpf'], )
+                    account.save()
+                return Response({'Usuário Cadastrado': serializer.data}, status=status.HTTP_201_CREATED)
+            return Response({'Erro': "O CPF deve ser sem ponto e traço"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -71,7 +66,7 @@ class UserSearch(generics.ListAPIView):
         if serializer.is_valid():
             with transaction.atomic():
                 serializer.save()
-        return Response(serializer.data, status=http.HTTPStatus.OK)
+        return Response({'Usuário atualizado:': serializer.data}, status=http.HTTPStatus.OK)
 
     def delete(self, request, cpf):
         user = Client.objects.get(cpf=cpf)
@@ -89,8 +84,13 @@ class CreateTransfer(APIView):
             if request.data['source_cpf'] != ['target_cpf']:
                 source_user = Account.objects.get(account_user=request.data['source_cpf'])
                 target_user = Account.objects.get(account_user=request.data['target_cpf'])
-                if (float(request.data['value']) > source_user.balance) or (source_user == target_user):
-                    return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                if float(request.data['value']) > source_user.balance:
+                    return Response(
+                        {"status": "O saldo da conta de origem deve ser maior que o valor da transferência"},
+                        status=status.HTTP_400_BAD_REQUEST)
+                elif source_user == target_user:
+                    return Response({"error": "Os usuários de destino e origem devem ser diferentes"},
+                                    status=status.HTTP_400_BAD_REQUEST)
                 else:
                     source_user.balance = source_user.balance - float(request.data['value'])
                     target_user.balance = target_user.balance + float(request.data['value'])
@@ -99,8 +99,8 @@ class CreateTransfer(APIView):
                         source_user.save()
                         serializer.save()
                     return Response({"Transferência realizada": serializer.data}, status=status.HTTP_201_CREATED)
-            return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error:": "Confira os dados informados"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TransfersView(generics.ListAPIView):

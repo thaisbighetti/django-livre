@@ -6,13 +6,13 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 class Client(models.Model):
     name = models.CharField(max_length=255, blank=False, verbose_name='Nome')
-    cpf = BRCPFField('CPF ', blank=False, primary_key=True, unique=True)
+    cpf = BRCPFField('CPF ', blank=False, primary_key=True, help_text='Formato: 00011122233')
     phone = PhoneNumberField(region='BR', blank=False, help_text='Formato DDD + Número',verbose_name='Telefone')
     email = models.EmailField(max_length=255, blank=False)
     creation = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        details = f'Cliente: {self.name}, cpf: {self.cpf}'
+        details = f'Cliente: {self.name} | cpf: {self.cpf}'
         return details
 
 
