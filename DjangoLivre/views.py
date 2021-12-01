@@ -66,6 +66,11 @@ class UserSearch(generics.ListAPIView):
                 serializer.save()
         return Response(serializer.data, status=http.HTTPStatus.OK)
 
+    def delete(self, request, cpf):
+        user = Client.objects.get(cpf=cpf)
+        user.delete()
+        return Response(status=http.HTTPStatus.NO_CONTENT)
+
 
 class CreateTransfer(APIView):
     serializer_class = TransferSerializer
