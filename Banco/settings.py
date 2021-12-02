@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'DjangoLivre',
     'localflavor',
     'phonenumber_field',
+    'drf_yasg',
 
 ]
 
