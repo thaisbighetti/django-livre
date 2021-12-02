@@ -1,7 +1,6 @@
 import http
 from django.db import transaction
 from rest_framework import status, generics
-from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Client, Transfer, Account
@@ -10,7 +9,7 @@ from .serializers import TransferSerializer, AccountSerializer, ClientSerializer
 
 class MainPage(APIView):
     http_method_names = ['get']
-     """
+    """
     Description of routes according to the desired action
     Each route will be detailed in the urls.py layer
     """
@@ -26,14 +25,13 @@ class MainPage(APIView):
                 'Bank Account': 'account/<str:cpf>/',
                 'All Bank Accounts': 'all-accounts',
                 }
-
         return Response(urls, status=http.HTTPStatus.OK)
 
 
 class CreateUser(APIView):
     serializer_class = ClientSerializer
     http_method_names = ['get', 'post', ]
-     """
+    """
     Create a user and present what was created
     """
 
@@ -70,7 +68,7 @@ class CreateUser(APIView):
 class UserView(generics.ListAPIView):
     queryset = Client.objects.all()
     serializer_class = ClientSerializer
-     """
+    """
     Lists registered users.
     """
 
@@ -106,7 +104,7 @@ class UserView(generics.ListAPIView):
 
 class UserSearch(generics.ListAPIView):
     serializer_class = ClientSerializer
-     """
+    """
     Gets and/or change the data of a specific user.
     """
 
@@ -240,7 +238,7 @@ class TransfersView(generics.ListAPIView):
 class TransfersPerformed(APIView):
     http_method_names = ['get', ]
     serializer_class = TransferSerializer
-     """
+    """
     Lists transfers performed by a specific user.
     """
 
@@ -277,7 +275,7 @@ class TransfersPerformed(APIView):
 class TransfersReceived(APIView):
     http_method_names = ['get', ]
     serializer_class = TransferSerializer
-     """
+    """
     Lists transfers received by a specific user.
     """
 
@@ -341,7 +339,7 @@ class AccountsView(generics.ListAPIView):
 class AccountView(APIView):
     http_method_names = ['get', ]
     serializer_class = AccountSerializer
-     """
+    """
     Return the account of a specific user
     """
 
