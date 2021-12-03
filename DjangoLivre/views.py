@@ -361,3 +361,10 @@ class AccountView(APIView):
         user = Account.objects.get(account_user=cpf)
         serializer = AccountSerializer(user)
         return Response(serializer.data)
+
+
+
+
+
+
+

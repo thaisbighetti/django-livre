@@ -1,27 +1,29 @@
 from datetime import datetime
+from unittest.mock import ANY
+from django.http.response import JsonResponse
 from django.test import TestCase
 from rest_framework.test import RequestsClient
 
 from .models import Client, Transfer, Account
-
+from .test_utils import generate_valid_cpf, post_two_clients
 
 class APIEndpointsTest(TestCase):
     """
-    Testing if our endpoint methods are working properly, by giving them
+    Testing if our endpoint methods are working properly, by giving them 
     valid data and analysing the responses.
     """
-
+    
     @classmethod
-    def setUpTestData(cls):  # setting up data for all tests in class
+    def setUpTestData(cls): # setting up data for all tests in class
         cls.cliente_1 = Client.objects.create(
-            name='name_1', cpf='cpf_1',
-            email='name_1@gmail.com',
-            phone='11987654321'
+            name = 'name_1', cpf = 'cpf_1',
+            email = 'name_1@gmail.com',
+            phone = '11987654321'
         )
         cls.cliente_2 = Client.objects.create(
-            name='name_2', cpf='cpf_2',
-            email='name_2@gmail.com',
-            phone='21987654321'
+            name = 'name_2', cpf = 'cpf_2',
+            email = 'name_2@gmail.com',
+            phone = '21987654321'
         )
 
     def setUp(self):
@@ -37,7 +39,17 @@ class APIEndpointsTest(TestCase):
         response = self.client.get('http://127.0.0.1:8000')
 
         self.assertEqual(response.status_code, 200)
-
+        self.assertEqual(response.json(), {'Create User': 'create-user/',
+                'User Detail': 'user/<str:cpf>/',
+                'All Users': 'all-users/',
+                'Bank Transfer': 'transfer/',
+                'All Transfers': 'all-transfers/',
+                'All User Transfers Received': 'transfers-received/<str:cpf>/',
+                'All User Transfers Performed': 'transfers-performed/<str:cpf>/',
+                'Bank Account': 'account/<str:cpf>/',
+                'All Bank Accounts': 'all-accounts',
+                })
+    
     def test_should_get_all_clients_with_http_200(self):
         """
         Testing if the clients created with setUpTestData are retrieved
@@ -47,8 +59,12 @@ class APIEndpointsTest(TestCase):
         json_response = response.json()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(json_response[0]['cpf'], 'cpf_1')
-        self.assertEqual(json_response[1]['name'], 'name_2')
+        self.assertEqual(json_response,
+            [{'cpf': 'cpf_1', 'name': 'name_1', 
+            'phone': '+5511987654321', 'email': 'name_1@gmail.com', 
+            'creation': ANY}, 
+            {'cpf': 'cpf_2', 'name': 'name_2', 'phone': '+5521987654321', 
+            'email': 'name_2@gmail.com', 'creation': ANY}])
 
     def test_should_search_client_cpf_with_http_200(self):
         """
@@ -59,38 +75,40 @@ class APIEndpointsTest(TestCase):
         json_response = response.json()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(json_response['name'], 'name_1')
+        self.assertEqual(json_response, 
+            {'cpf': 'cpf_1', 'name': 'name_1', 
+            'phone': '+5511987654321', 'email': 'name_1@gmail.com', 
+            'creation': ANY})
 
     def test_should_post_users_and_create_accounts(self):
         """
         Testing if posting an user creates an account associated with that user.
-        Since our Client and Account classes are related, and the CreateUser view
+        Since our Client and Account classes are related, and the CreateUser view 
         creates also an account, we are testing the CreateUser view POST method,
         and if it is creating instances of Account.
         """
         self.assertEqual(Account.objects.count(), 0)
         # since we haven't POSTED the clients, no account should be registered
-        client_data = {'cpf': generate_valid_cpf(),
-                       'name': 'name_3',
-                       'phone': '+5531987654321',
-                       'email': 'name_3@gmail.com',
-                       'date': datetime.now()
-                       }
-        client_data_2 = {'cpf': generate_valid_cpf(),
-                         'name': 'name_4',
-                         'phone': '+5541987654321',
-                         'email': 'name_4@gmail.com',
-                         'date': datetime.now()
-                         }
+        client_data = {'cpf': generate_valid_cpf(), 
+        'name': 'name_3', 
+        'phone': '+5531987654321', 
+        'email': 'name_3@gmail.com',
+        'date': datetime.now() 
+        }
 
         response = self.client.post('http://127.0.0.1:8000/create-user/', client_data)
-        response_2 = self.client.post('http://127.0.0.1:8000/create-user/', client_data_2)
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response_2.status_code, 201)
+        json_response = response.json()
 
-        # so now we should have 4 clients (2 via create and 2 via post) but only 2 accounts
-        self.assertEqual(Client.objects.count(), 4)
-        self.assertEqual(Account.objects.count(), 2)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(json_response,
+            {'Usuário Cadastrado': {
+            'cpf': ANY, 'name': 'name_3', # since the cpf is random generated, we just check if it's there
+            'phone': '+5531987654321', 'email': 'name_3@gmail.com', 
+            'creation': ANY}})
+
+        # so now we should have 3 clients (2 via create and 1 via post) but only 1 account
+        self.assertEqual(Client.objects.count(), 3)
+        self.assertEqual(Account.objects.count(), 1)
         # now we are sure our post method insures our client creates an account by registering
 
     def test_should_get_all_accounts_with_http_200(self):
@@ -98,15 +116,17 @@ class APIEndpointsTest(TestCase):
         Testing if the accounts created when posting the clients are retrieved
         with GET method on endpoint 'all-accounts/' (AccountsView view)
         """
-        post_two_clients()
+        posting = post_two_clients
+        posting()
 
         response = self.client.get('http://127.0.0.1:8000/all-accounts/')
         json_response = response.json()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(json_response[0]['balance'], 5000)
-        self.assertEqual(json_response[1]['balance'], 5000)
         self.assertEqual(len(json_response), 2)
+        self.assertEqual(json_response,
+            [{'account_user': ANY, 'number': ANY, 'balance': 5000}, 
+            {'account_user': ANY, 'number': ANY, 'balance': 5000}])
 
     def test_should_get_accounts_by_cpf_with_http_200(self):
         """
@@ -120,7 +140,11 @@ class APIEndpointsTest(TestCase):
         cpf_3 = client_3.cpf
 
         response = self.client.get(f'http://127.0.0.1:8000/account/{cpf_3}/')
+        json_response = response.json()
+
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(json_response, 
+            {'account_user': ANY, 'number': ANY, 'balance': 5000})
 
     def test_should_create_transfer_with_http_201(self):
         """
@@ -133,11 +157,11 @@ class APIEndpointsTest(TestCase):
         target_client = Client.objects.get(name='name_4')
         source_cpf = source_client.cpf
         target_cpf = target_client.cpf
-
+    
         transfer = {
-            "source_cpf": source_cpf,
-            "target_cpf": target_cpf,
-            "value": 10.0
+        "source_cpf": source_cpf,
+        "target_cpf": target_cpf,
+        "value": 10.0
         }
 
         response = self.client.post('http://127.0.0.1:8000/transfer/', transfer)
@@ -145,7 +169,9 @@ class APIEndpointsTest(TestCase):
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(Transfer.objects.count(), 1)
-        self.assertEqual(json_response['Transferência realizada']['id'], 1)
+        self.assertEqual(json_response,
+            {'Transferência realizada': {'id': 1, 'source_cpf': source_cpf, 
+            'target_cpf': target_cpf, 'value': 10.0, 'date': ANY}})
 
     def test_should_get_transfer_with_http_200(self):
         """
@@ -158,11 +184,11 @@ class APIEndpointsTest(TestCase):
         target_client = Client.objects.get(name='name_4')
         source_cpf = source_client.cpf
         target_cpf = target_client.cpf
-
+    
         transfer = {
-            "source_cpf": source_cpf,
-            "target_cpf": target_cpf,
-            "value": 10.0
+        "source_cpf": source_cpf,
+        "target_cpf": target_cpf,
+        "value": 10.0
         }
         transfering = self.client.post('http://127.0.0.1:8000/transfer/', transfer)
 
@@ -170,7 +196,9 @@ class APIEndpointsTest(TestCase):
         json_response = response.json()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(json_response[0]['id'], 1)
+        self.assertEqual(json_response,
+            [{'id': 1, 'source_cpf': source_cpf, 'target_cpf': target_cpf, 
+            'value': 10.0, 'date': ANY}])
 
     def test_should_get_received_transfers_with_http_200(self):
         """
@@ -183,11 +211,11 @@ class APIEndpointsTest(TestCase):
         target_client = Client.objects.get(name='name_4')
         source_cpf = source_client.cpf
         target_cpf = target_client.cpf
-
+    
         transfer = {
-            "source_cpf": source_cpf,
-            "target_cpf": target_cpf,
-            "value": 10.0
+        "source_cpf": source_cpf,
+        "target_cpf": target_cpf,
+        "value": 10.0
         }
         transfering = self.client.post('http://127.0.0.1:8000/transfer/', transfer)
 
@@ -196,7 +224,10 @@ class APIEndpointsTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(json_response), 1)
-        self.assertEqual(json_response['Histórico de transferências recebidas pelo usuário'][0]['id'], 1)
+        self.assertEqual(json_response,
+            {'Histórico de transferências recebidas pelo usuário': 
+            [{'id': 1, 'source_cpf': source_cpf, 'target_cpf': target_cpf, 
+            'value': 10.0, 'date': ANY}]})
 
     def test_should_get_performed_transfers_with_http_200(self):
         """
@@ -209,11 +240,11 @@ class APIEndpointsTest(TestCase):
         target_client = Client.objects.get(name='name_4')
         source_cpf = source_client.cpf
         target_cpf = target_client.cpf
-
+    
         transfer = {
-            "source_cpf": source_cpf,
-            "target_cpf": target_cpf,
-            "value": 10.0
+        "source_cpf": source_cpf,
+        "target_cpf": target_cpf,
+        "value": 10.0
         }
         transfering = self.client.post('http://127.0.0.1:8000/transfer/', transfer)
 
@@ -222,13 +253,15 @@ class APIEndpointsTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(json_response), 1)
-        self.assertEqual(json_response['Histórico de transferências realizadas pelo usuário'][0]['id'], 1)
-
+        self.assertEqual(json_response,
+            {'Histórico de transferências realizadas pelo usuário': 
+            [{'id': 1, 'source_cpf': source_cpf, 'target_cpf': target_cpf, 
+            'value': 10.0, 'date': ANY}]})
 
 class APIValidationsTest(TestCase):
     """
     Testing if our endpoint methods are giving the correct responses when we
-    try to post invalid or incorrect data.
+    try to post invalid or incorrect data. 
     """
 
     def setUp(self):
@@ -242,31 +275,31 @@ class APIValidationsTest(TestCase):
         Testing if trying to create an user with invalid data (like invalid cpf or phone)
         returns a 400_BAD_REQUEST response on endpoint 'create-user/' (CreateUser view)
         """
-        client_data = {'cpf': '11111111111',  # sequences like this are invalid cpfs
-                       'name': 'name_1',
-                       'phone': '+5531987654321',
-                       'email': 'name_2@gmail.com',
-                       'date': datetime.now()
-                       }
+        client_data = {'cpf': '11111111111', # sequences like this are invalid cpfs 
+        'name': 'name_1', 
+        'phone': '+5531987654321', 
+        'email': 'name_2@gmail.com',
+        'date': datetime.now() 
+        }
 
         client_data_2 = {'cpf': generate_valid_cpf(),
-                         'name': 'name_2',
-                         'phone': '987654321',  # phone without local DDD
-                         'email': 'name_2@gmail.com',
-                         'date': datetime.now()
-                         }
-
+        'name': 'name_2', 
+        'phone': '987654321', # phone without local DDD
+        'email': 'name_2@gmail.com',
+        'date': datetime.now() 
+        }        
+        
         client_data_3 = {'cpf': generate_valid_cpf(),
-                         'name': 'name_2',
-                         'phone': '987654321',
-                         'email': 'name_2',  # invalid email
-                         'date': datetime.now()
-                         }
+        'name': 'name_2', 
+        'phone': '987654321',
+        'email': 'name_2', # invalid email
+        'date': datetime.now() 
+        }
 
         response = self.client.post('http://127.0.0.1:8000/create-user/', client_data)
         response_2 = self.client.post('http://127.0.0.1:8000/create-user/', client_data_2)
         response_3 = self.client.post('http://127.0.0.1:8000/create-user/', client_data_3)
-
+        
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response_2.status_code, 400)
         self.assertEqual(response_3.status_code, 400)
@@ -282,19 +315,19 @@ class APIValidationsTest(TestCase):
         json_response = response.json()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(json_response), 0)
+        self.assertEqual(json_response, [])
 
     def test_should_not_get_user_not_created_with_http_500(self):
         """
         Testing if trying to get a non-created (or posted) user
-        returns a 500 response on endpoint 'user/<str:cpf>/' (UserSearch view)
+        returns a 500 response on endpoint 'user/<str:cpf>/' (UserSearch view)  
         """
         client_data = {'cpf': generate_valid_cpf(),
-                       'name': 'name_1',
-                       'phone': '+5511987654321',
-                       'email': 'name_1@gmail.com',
-                       'date': datetime.now()
-                       }
+        'name': 'name_1', 
+        'phone': '+5511987654321', 
+        'email': 'name_1@gmail.com',
+        'date': datetime.now() 
+        }        
         another_cpf = generate_valid_cpf()
 
         response_post = self.client.post('http://127.0.0.1:8000/create-user/', client_data)
@@ -316,19 +349,19 @@ class APIValidationsTest(TestCase):
         json_response = response.json()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(json_response), 0)
+        self.assertEqual(json_response, [])
 
     def test_should_not_get_uncreated_account_with_http_500(self):
         """
         Testing if trying to get a non-created account
-        returns a 400_BAD_REQUEST response on endpoint 'account/<str:cpf>/' (AccountView)
+        returns a 400_BAD_REQUEST response on endpoint 'account/<str:cpf>/' (AccountView)  
         """
         client_data = {'cpf': generate_valid_cpf(),
-                       'name': 'name_1',
-                       'phone': '+5511987654321',
-                       'email': 'name_1@gmail.com',
-                       'date': datetime.now()
-                       }
+        'name': 'name_1', 
+        'phone': '+5511987654321', 
+        'email': 'name_1@gmail.com',
+        'date': datetime.now() 
+        }        
         another_cpf = generate_valid_cpf()
 
         response_post = self.client.post('http://127.0.0.1:8000/create-user/', client_data)
@@ -341,29 +374,35 @@ class APIValidationsTest(TestCase):
     def test_should_not_get_transfer_not_created_with_http_200(self):
         """
         Testing if trying to get a non-created  transfer
-        returns a 200 response on endpoint 'all-transfers/' (TransfersView)
+        returns a 200 response on endpoint 'all-transfers/' (TransfersView)  
         """
         response = self.client.get('http://127.0.0.1:8000/all-transfers/')
         json_response = response.json()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(json_response), 0)
+        self.assertEqual(json_response, [])
 
-    def test_should_not_get_uncreated_transfers_not_created_with_http_200(self):
+    def test_should_not_get_uncreated_transfers_with_http_200(self):
         """
         Testing if trying to get a non-created performed or received transfer
-        returns a 200 response on endpoints 'transfers-performed/<str:cpf>/' (TransfersPerformed)
-        and 'transfers-received/<str:cpf>/' (TransfersReceived)
+        returns a 200 response on endpoints 'transfers-performed/<str:cpf>/' (TransfersPerformed) 
+        and 'transfers-received/<str:cpf>/' (TransfersReceived) 
         """
         response_performed = self.client.get('http://127.0.0.1:8000/transfers-performed/11111111111')
-        json_performed = response_performed.json()
+        json_performed = response_performed.json()        
         response_received = self.client.get('http://127.0.0.1:8000/transfers-received/11111111111')
         json_received = response_received.json()
 
         self.assertEqual(response_performed.status_code, 200)
         self.assertEqual(response_received.status_code, 200)
-        self.assertEqual(json_performed['Histórico de transferências realizadas pelo usuário'], [])
-        self.assertEqual(json_received['Histórico de transferências recebidas pelo usuário'], [])
+        self.assertEqual(
+            json_performed,
+            {'Histórico de transferências realizadas pelo usuário': []}
+        )
+        self.assertEqual(
+            json_received,
+            {'Histórico de transferências recebidas pelo usuário': []}
+        )
 
     def test_should_not_post_transfer_with_invalid_cpf(self):
         """
@@ -371,9 +410,9 @@ class APIValidationsTest(TestCase):
         'transfer/' endpoint (CreateTransfer view)
         """
         transfer = {
-            "source_cpf": 11111111111,
-            "target_cpf": 22222222222,
-            "value": 10.0
+        "source_cpf": 11111111111,
+        "target_cpf": 22222222222,
+        "value": 10.0
         }
 
         response = self.client.post('http://127.0.0.1:8000/transfer/', transfer)
@@ -381,7 +420,8 @@ class APIValidationsTest(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(Transfer.objects.count(), 0)
-        self.assertEqual(json_response['error:'], "Confira os dados informados")
+        self.assertEqual(json_response,
+            {'error:': 'Confira os dados informados'})
 
     def test_should_not_create_transfer_without_enough_money(self):
         """
@@ -394,11 +434,11 @@ class APIValidationsTest(TestCase):
         target_client = Client.objects.get(name='name_4')
         source_cpf = source_client.cpf
         target_cpf = target_client.cpf
-
+    
         transfer = {
-            "source_cpf": source_cpf,
-            "target_cpf": target_cpf,
-            "value": 8000.0  # the balance is 5000
+        "source_cpf": source_cpf,
+        "target_cpf": target_cpf,
+        "value": 8000.0  # the balance is 5000
         }
 
         response = self.client.post('http://127.0.0.1:8000/transfer/', transfer)
@@ -406,7 +446,8 @@ class APIValidationsTest(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(Transfer.objects.count(), 0)
-        self.assertEqual(len(json_response), 1)
+        self.assertEqual(json_response,
+            {'status': 'O saldo da conta de origem deve ser maior que o valor da transferência'})
 
     def test_should_not_create_transfer_to_same_user(self):
         """
@@ -419,11 +460,11 @@ class APIValidationsTest(TestCase):
         target_client = Client.objects.get(name='name_4')
         source_cpf = source_client.cpf
         target_cpf = target_client.cpf
-
+    
         transfer = {
-            "source_cpf": source_cpf,
-            "target_cpf": source_cpf,
-            "value": 10.0  # the balance is 5000
+        "source_cpf": source_cpf,
+        "target_cpf": source_cpf,
+        "value": 10.0  # the balance is 5000
         }
 
         response = self.client.post('http://127.0.0.1:8000/transfer/', transfer)
@@ -431,58 +472,5 @@ class APIValidationsTest(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(Transfer.objects.count(), 0)
-        self.assertEqual(len(json_response), 1)
-
-
-def generate_valid_cpf():
-    """
-    This function generates a random valid CPF. We are going to use it for populating the
-    tables and testing our API. (return cpf in string format)
-    """
-    from random import randint
-    numero = str(randint(100000000, 999999999))
-    novo_cpf = numero  # variável que vamos criar para conferir o cpf (tirando os dois últimos digitos)
-    cpf_lista = [int(i) for i in novo_cpf]
-
-    maxs = 10
-    while True:
-        soma = 0
-        for n, r in enumerate(range(maxs, 1, -1)):
-            soma += r * cpf_lista[n]
-
-        d = 0 if (11 - (soma % 11)) > 9 else (11 - (soma % 11))
-
-        novo_cpf += str(d)  # colocando o digito novo no cpf
-        cpf_lista.append(d)  # colocando o digito na lista do cpf
-        if len(novo_cpf) < 11:
-            maxs += 1  # aumentando o range do for para 11
-            continue
-        return novo_cpf
-
-
-def post_two_clients():
-    """
-    Note: this function was added after test_should_post_users_and_create_accounts, so we
-    are already sure the 'create-user/' endpoint is working properly.
-
-    Now we are sure our post method for clients works, we are going to use this function
-    to post clients (and consequently create accounts) to test the remaining endpoints
-    and functionalities of our API (transfers and account-client relation).
-    """
-
-    client_data = {'cpf': generate_valid_cpf(),
-                   'name': 'name_3',
-                   'phone': '+5531987654321',
-                   'email': 'name_3@gmail.com',
-                   'date': datetime.now()
-                   }
-    client_data_2 = {'cpf': generate_valid_cpf(),
-                     'name': 'name_4',
-                     'phone': '+5541987654321',
-                     'email': 'name_4@gmail.com',
-                     'date': datetime.now()
-                     }
-
-    client = RequestsClient()
-    client.post('http://127.0.0.1:8000/create-user/', client_data)
-    client.post('http://127.0.0.1:8000/create-user/', client_data_2)
+        self.assertEqual(json_response, 
+            {'error': 'Os usuários de destino e origem devem ser diferentes'})

@@ -9,9 +9,9 @@ The goal of this project was to develop an API using the Django Rest Framework.
 This project uses [docker](https://www.docker.com/).
 ### Running the project
 
- docker build --tag app .
+ ``` docker build --tag app . ```
  
- docker run --publish 8000:8000 app
+ ``` docker run --publish 8000:8000 app ```
 
 ## Project routes
 
