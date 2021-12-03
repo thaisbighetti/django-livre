@@ -30,7 +30,7 @@ class MainPage(APIView):
 
 class CreateUser(APIView):
     serializer_class = ClientSerializer
-    http_method_names = ['get', 'post', ]
+    http_method_names = ['post', ]
     """
     Create a user and present what was created
     """
@@ -44,14 +44,14 @@ class CreateUser(APIView):
         It returns:
              - HTTP status = 200;
              - A JSON like this:
-                {
+               { "Usuário Cadastrado": {
                     "cpf": "48748589292",
                     "name": "Maria",
                     "phone": "+5511912345678",
                     "email": "maria@gmail.com",
                     "creation": "2021-12-01T01:19:59.465753Z"
                 }
-            - GET as http method;
+                }
              """
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
