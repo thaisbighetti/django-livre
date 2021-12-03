@@ -10,6 +10,7 @@ This project uses [docker](https://www.docker.com/).
 ### Running the project
 
  docker build --tag app .
+ 
  docker run --publish 8000:8000 app
 
 ## Project routes
