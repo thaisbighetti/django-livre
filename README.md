@@ -42,7 +42,7 @@ Run ```docker-compose up --build integration-tests```
 
 ## Contributors
 - [Amanda Luz](https://github.com/AmanddaLuz)
-- [Giulia Coutinho]()
+- [Giulia Coutinho](https://github.com/agiulsz)
 - [Marília Ferreira](https://github.com/miachafer)
 - [Teresa Antunes](https://github.com/teresantns)
 - [Thais Bighetti](https://github.com/thaisbighetti)
