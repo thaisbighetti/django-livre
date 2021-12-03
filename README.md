@@ -6,15 +6,11 @@ The goal of this project was to develop an API using the Django Rest Framework.
 
 ## Running the project
 
-This project uses [docker](https://www.docker.com/) and [docker-compose](https://docs.docker.com/compose/).
-
+This project uses [docker](https://www.docker.com/).
 ### Running the project
 
-Run ```docker-compose up --build app```. It'll be available at http://localhost:8000.
-
-### Running the tests
-
-Run ```docker-compose up --build integration-tests```
+ docker build --tag app .
+ docker run --publish 8000:8000 app
 
 ## Project routes
 
